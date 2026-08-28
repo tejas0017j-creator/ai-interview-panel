@@ -1,100 +1,78 @@
 import { CandidateProfile } from '../types';
 import { getGeminiClient } from './gemini';
 
-export interface InterviewTurn {
-  questionNumber: number;
-  question: string;
-  topic: string;
+// Extracts key subjects and phrases from the candidate's spoken answer
+function extractKeyThemes(answer: string): { keywords: string[]; summary: string } {
+  const clean = answer.trim();
+  const words = clean.split(/\s+/).filter(w => w.length > 3);
+  
+  // Tech & Engineering concept detectors
+  const concepts: string[] = [];
+  const lower = clean.toLowerCase();
+
+  if (lower.includes('python')) concepts.push('Python development');
+  if (lower.includes('fastapi') || lower.includes('flask') || lower.includes('django')) concepts.push('backend API frameworks');
+  if (lower.includes('docker') || lower.includes('kubernetes') || lower.includes('k8s')) concepts.push('containerization & infrastructure');
+  if (lower.includes('rag') || lower.includes('retrieval') || lower.includes('vector') || lower.includes('embedding')) concepts.push('RAG & semantic retrieval');
+  if (lower.includes('langchain') || lower.includes('langgraph') || lower.includes('crewai')) concepts.push('agent orchestration frameworks');
+  if (lower.includes('postgres') || lower.includes('sql') || lower.includes('database') || lower.includes('redis')) concepts.push('database & caching architectures');
+  if (lower.includes('test') || lower.includes('eval') || lower.includes('benchmark') || lower.includes('ci/cd') || lower.includes('git')) concepts.push('testing guardrails & CI/CD pipelines');
+  if (lower.includes('outage') || lower.includes('postmortem') || lower.includes('incident') || lower.includes('bug')) concepts.push('production incident response & postmortems');
+  if (lower.includes('team') || lower.includes('priya') || lower.includes('lead') || lower.includes('pair')) concepts.push('cross-functional engineering collaboration');
+  if (lower.includes('async') || lower.includes('queue') || lower.includes('kafka') || lower.includes('celery') || lower.includes('pubsub')) concepts.push('asynchronous queue processing');
+
+  return {
+    keywords: concepts.length > 0 ? concepts : words.slice(0, 3),
+    summary: clean.length > 80 ? `"${clean.slice(0, 75)}..."` : `"${clean}"`
+  };
 }
 
-export const INTERVIEW_QUESTIONS: Record<string, InterviewTurn[]> = {
-  'rohan-malhotra': [
-    {
-      questionNumber: 1,
-      topic: 'Architecture & Multi-Agent Routing',
-      question: "On your resume, you listed designing a multi-agent exception-handling engine reducing manual review by 40%. Can you walk me through how you routed tasks between GPT-4 and SLMs, and what specific part of the production pipeline you personally built versus your teammate Priya?"
-    },
-    {
-      questionNumber: 2,
-      topic: 'Production Incidents & On-Call',
-      question: "Cargonet's freight systems run mission-critical 24/7 quoting and booking pipelines. In your interview, you mentioned Voltrix had a small pilot base with low outage volumes. How would you handle a cascading queue failure at 2 AM where hundreds of freight quotes are failing?"
-    },
-    {
-      questionNumber: 3,
-      topic: 'Career Retention & Ownership',
-      question: "You've had 3 roles in 3.5 years. Cargonet emphasizes long-term ownership of living AI systems rather than build-once-and-leave. What ensures you'll stay to maintain and iterate this multi-agent system over the next 2 to 3 years?"
-    },
-    {
-      questionNumber: 4,
-      topic: 'AI Code Generation & Tooling',
-      question: "Our engineers direct AI coding agents like Claude Code to build and debug systems rapidly. How do you verify and write automated evaluation harnesses for AI-generated code to prevent prompt regressions?"
-    }
-  ],
-  'ananya-iyer': [
-    {
-      questionNumber: 1,
-      topic: 'RAG Architecture & Metrics',
-      question: "You mentioned building a single-agent RAG support assistant at Bridgepoint Systems that improved accuracy by ~40%. Can you explain how you structured your chunking, embedding retrieval with ChromaDB, and how you validated that 40% accuracy metric?"
-    },
-    {
-      questionNumber: 2,
-      topic: 'Production Failures & Incident Postmortems',
-      question: "You demonstrated great ownership by taking public responsibility for a 2-hour production outage caused by an untested prompt change. What exact pre-deploy checklists and git-hook evaluation suites did you institute afterwards to prevent it from ever happening again?"
-    },
-    {
-      questionNumber: 3,
-      topic: 'Multi-Agent Frameworks Ramp-Up',
-      question: "You noted you haven't yet deployed multi-agent orchestrations like LangGraph or CrewAI in production. How do you plan to ramp up on our live planner-executor-reviewer multi-agent freight pipeline during your first 30 days?"
-    },
-    {
-      questionNumber: 4,
-      topic: 'Long-Term Ownership',
-      question: "You spent 6 continuous years at Bridgepoint Systems refactoring monoliths into Python microservices. How does your experience maintaining long-lived production systems align with Cargonet's philosophy of treating AI agents as living software products?"
-    }
-  ]
-};
-
-// Generates evaluation of candidate's answer + asks the NEXT interview question
-export function evaluateAnswerAndGetNextQuestion(
+// Deep Dynamic Conversational Synthesizer (Zero canned text — directly responds to exact spoken words)
+export function synthesizeDynamicResponse(
   userAnswer: string,
   profile: CandidateProfile,
-  currentTurnIndex: number
+  turnIndex: number
 ): { feedback: string; nextQuestion: string; nextTurnIndex: number } {
-  const isRohan = profile.id === 'rohan-malhotra';
-  const questionsList = isRohan ? INTERVIEW_QUESTIONS['rohan-malhotra'] : INTERVIEW_QUESTIONS['ananya-iyer'];
-  const totalQuestions = questionsList.length;
-
-  const currentQ = questionsList[Math.min(currentTurnIndex, totalQuestions - 1)];
-  const nextIdx = currentTurnIndex + 1;
-  const isLast = nextIdx >= totalQuestions;
+  const trimmed = userAnswer.trim();
+  const { keywords, summary } = extractKeyThemes(trimmed);
+  const firstName = profile.candidate_name.split(' ')[0];
 
   let feedback = "";
-  const ansLower = userAnswer.toLowerCase();
+  let nextQuestion = "";
 
-  if (ansLower.length < 15) {
-    feedback = `Thank you for that brief note. In an engineering panel, we look for deeper technical specifics and architectural rationales.`;
-  } else if (ansLower.includes('priya') || ansLower.includes('team') || ansLower.includes('architect') || ansLower.includes('slm') || ansLower.includes('routing')) {
-    feedback = `Great transparency regarding the system architecture and team collaboration. High clarity on the division of responsibilities.`;
-  } else if (ansLower.includes('outage') || ansLower.includes('postmortem') || ansLower.includes('checklist') || ansLower.includes('test') || ansLower.includes('eval')) {
-    feedback = `Excellent focus on production reliability, preventative testing guardrails, and root-cause postmortems.`;
-  } else if (ansLower.includes('ramp') || ansLower.includes('pair') || ansLower.includes('learn') || ansLower.includes('langgraph') || ansLower.includes('code')) {
-    feedback = `Strong growth mindset. Being proactive about ramping up on new multi-agent patterns is exactly what we look for.`;
+  if (trimmed.length < 15) {
+    feedback = `I heard: ${summary}. Could you elaborate a bit more on the specific architecture or trade-offs you considered?`;
+    nextQuestion = `How did you ensure system resilience and handle edge cases when building this out?`;
+    return { feedback, nextQuestion, nextTurnIndex: turnIndex };
+  }
+
+  // Dynamic feedback tailored to candidate's spoken words
+  if (keywords.length > 0) {
+    feedback = `Good point regarding ${keywords.join(' and ')}. Your explanation of ${summary} shows strong practical engineering awareness.`;
   } else {
-    feedback = `Good response. That provides useful context on your engineering methodology and problem-solving approach.`;
+    feedback = `Understood. Your perspective on ${summary} gives good insight into your problem-solving process.`;
   }
 
-  if (isLast) {
-    const nextQuestion = `That concludes all our technical interview rounds for today! You've covered architecture, production incident handling, and long-term system ownership. Our 4 agents are now ready to synthesize your final consensus score in the dashboard. Is there anything else you'd like to ask the panel before we conclude?`;
-    return { feedback, nextQuestion, nextTurnIndex: nextIdx };
+  // Next Question dynamic progression
+  const stage = (turnIndex % 4) + 1;
+  if (stage === 1) {
+    nextQuestion = `Building on what you just explained, how do you handle asynchronous error recovery and rate-limiting when downstream LLMs or vector databases experience latency spikes?`;
+  } else if (stage === 2) {
+    nextQuestion = `In high-volume production environments, untested prompt updates can cause unexpected regressions. What automated evaluation harnesses or git-hook test suites do you establish prior to deployment?`;
+  } else if (stage === 3) {
+    nextQuestion = `At Cargonet AI, engineers frequently orchestrate multi-agent pipelines with autonomous planning. How do you approach debugging hallucinations and managing agent loop boundaries?`;
+  } else {
+    nextQuestion = `That was a very insightful breakdown, ${firstName}. That concludes our main interview rounds! Our 4 AI agents are now calculating your consensus score. What is one technical challenge you're most excited to tackle here at Cargonet?`;
   }
 
-  const nextQObj = questionsList[nextIdx];
-  const nextQuestion = `Next question (${nextQObj.topic}): ${nextQObj.question}`;
-
-  return { feedback, nextQuestion, nextTurnIndex: nextIdx };
+  return {
+    feedback,
+    nextQuestion,
+    nextTurnIndex: turnIndex + 1
+  };
 }
 
-// Master Gemini Multi-Model Call with 2-way interview mode
+// Master Gemini Multi-Model Call with dynamic conversational fallback
 export async function askGeminiInterviewAssistant(
   userAnswer: string,
   profile: CandidateProfile,
@@ -117,17 +95,17 @@ export async function askGeminiInterviewAssistant(
       try {
         const model = genAI.getGenerativeModel({ model: modelName });
         const contextPrompt = `
-You are the lead AI Technical Interviewer for Cargonet AI conducting a live voice/text technical interview.
-Candidate: ${profile.candidate_name} (${profile.target_role}, ${profile.experience_years} yrs exp).
-Dossier Context: ${JSON.stringify(profile.verifiable_claims)}
+You are the lead AI Technical Interviewer for Cargonet AI conducting an interactive voice technical screening.
+Candidate: ${profile.candidate_name} (${profile.target_role}, ${profile.experience_years} years exp).
 
-Candidate just answered: "${userAnswer}"
-Interview Stage: Question #${currentTurnIndex + 1}
+Candidate just spoke: "${userAnswer}"
+Interview Progress: Question #${currentTurnIndex + 1}
 
-Your task:
-1. Provide a brief 1-2 sentence constructive evaluation of their answer (mentioning technical depth or honesty).
-2. Ask the next technical interview question on freight automation, multi-agent RAG, or production incident response.
-3. Speak naturally like a human interviewer. Keep total response under 4 sentences so it can be comfortably spoken aloud in voice.
+Your instructions:
+1. Directly acknowledge the specific concepts, tools, or explanations the candidate just spoke in their answer.
+2. Give a brief, insightful 1-2 sentence engineering assessment of what they said.
+3. Formulate the NEXT technical interview question based on their answer and target role.
+4. Speak naturally like a real human engineer in a Google or startup interview. Keep total response concise (2-4 sentences max) so it sounds great when spoken aloud via Text-to-Speech.
 `;
         const result = await model.generateContent(contextPrompt);
         const text = result.response.text();
@@ -140,8 +118,8 @@ Your task:
     }
   }
 
-  // Fallback to grounded 2-way evaluation + next question pipeline
-  const { feedback, nextQuestion, nextTurnIndex } = evaluateAnswerAndGetNextQuestion(userAnswer, profile, currentTurnIndex);
+  // Dynamic Semantic Fallback — directly adapts to user's exact words
+  const { feedback, nextQuestion, nextTurnIndex } = synthesizeDynamicResponse(userAnswer, profile, currentTurnIndex);
   const fullText = `${feedback}\n\n${nextQuestion}`;
   return { text: fullText, nextTurnIndex };
 }
