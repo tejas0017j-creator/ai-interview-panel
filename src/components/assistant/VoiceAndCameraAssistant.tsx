@@ -11,8 +11,8 @@ import {
   Radio,
   Volume2,
   VolumeX,
-  CheckCircle,
   Activity,
+  CheckCircle2,
 } from 'lucide-react';
 import { CandidateProfile, VoiceMessage } from '../../types';
 import { askGeminiInterviewAssistant } from '../../services/aiAssistantEngine';
@@ -36,7 +36,7 @@ export const VoiceAndCameraAssistant: React.FC<VoiceAndCameraAssistantProps> = (
   const [isAiThinking, setIsAiThinking] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [inputQuery, setInputQuery] = useState('');
-  const [interimText, setInterimText] = useState('');
+  const [liveTranscript, setLiveTranscript] = useState('');
   const [messages, setMessages] = useState<VoiceMessage[]>([]);
   const [hasStartedInterview, setHasStartedInterview] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -48,7 +48,8 @@ export const VoiceAndCameraAssistant: React.FC<VoiceAndCameraAssistantProps> = (
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatHistoryRef = useRef<{ role: string; parts: { text: string }[] }[]>([]);
   const animFrameRef = useRef<number | null>(null);
-  const silenceTimerRef = useRef<any>(null);
+  const accumulatedSpeechRef = useRef<string>('');
+  const silenceTimeoutRef = useRef<any>(null);
 
   // Auto-scroll messages
   useEffect(() => {
@@ -65,7 +66,7 @@ export const VoiceAndCameraAssistant: React.FC<VoiceAndCameraAssistantProps> = (
         ? "On your resume, you listed designing a multi-agent exception-handling engine reducing manual review by 40%. Can you walk me through how you routed tasks between GPT-4 and SLMs, and what specific part of the production pipeline you personally built?"
         : "You mentioned building a single-agent RAG support assistant at Bridgepoint Systems that improved accuracy by ~40%. Can you explain how you structured your chunking, embedding retrieval with ChromaDB, and how you validated that accuracy metric?";
 
-      const welcomeText = `Hi ${firstName}! Welcome to your live technical interview for Cargonet AI. I'll be listening to your answers and asking follow-up engineering questions.\n\nLet's begin with Question 1:\n"${q1}"`;
+      const welcomeText = `Hi ${firstName}! Welcome to your live AI technical interview for Cargonet AI. I can answer any questions, explain engineering concepts, or evaluate your responses.\n\nLet's begin with Question 1:\n"${q1}"`;
 
       const welcomeMsg: VoiceMessage = {
         id: `turn-0-${Date.now()}`,
@@ -82,15 +83,16 @@ export const VoiceAndCameraAssistant: React.FC<VoiceAndCameraAssistantProps> = (
     }
   }, [isOpen, hasStartedInterview, activeProfile]);
 
-  // Reset interview state when candidate profile changes
+  // Reset on candidate change
   useEffect(() => {
     setHasStartedInterview(false);
     setCurrentQuestionIndex(0);
     setMessages([]);
     chatHistoryRef.current = [];
+    accumulatedSpeechRef.current = '';
   }, [activeProfile.id]);
 
-  // Animated Canvas HUD for Biometric / Camera Fallback
+  // Animated Canvas HUD for Simulated Biometrics / Camera Fallback
   useEffect(() => {
     if (isOpen && isSimulatedCam && canvasRef.current) {
       const canvas = canvasRef.current;
@@ -211,11 +213,12 @@ export const VoiceAndCameraAssistant: React.FC<VoiceAndCameraAssistantProps> = (
       if (recognitionRef.current) {
         try { recognitionRef.current.stop(); } catch (e) {}
       }
+      if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
       setIsListening(false);
     }
   }, [isOpen]);
 
-  // Continuous Speech Recognition (Mic) with Live Real-Time Transcription
+  // Continuous Speech Recognition setup
   useEffect(() => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SR) {
@@ -225,28 +228,41 @@ export const VoiceAndCameraAssistant: React.FC<VoiceAndCameraAssistantProps> = (
       recognition.lang = 'en-US';
 
       recognition.onresult = (event: any) => {
-        let finalTranscript = '';
+        let finalChunk = '';
         let interim = '';
 
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript + ' ';
+            finalChunk += event.results[i][0].transcript + ' ';
           } else {
             interim += event.results[i][0].transcript;
           }
         }
 
-        if (finalTranscript) {
-          setInputQuery(prev => (prev ? prev + ' ' + finalTranscript.trim() : finalTranscript.trim()));
+        if (finalChunk) {
+          accumulatedSpeechRef.current = (accumulatedSpeechRef.current + ' ' + finalChunk).trim();
+          setInputQuery(accumulatedSpeechRef.current);
         }
-        setInterimText(interim);
+        
+        const fullCurrent = (accumulatedSpeechRef.current + ' ' + interim).trim();
+        setLiveTranscript(fullCurrent);
+
+        // Auto-send on silence (2.5s) if user spoke a substantial thought
+        if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+        if (fullCurrent.length > 10) {
+          silenceTimeoutRef.current = setTimeout(() => {
+            if (accumulatedSpeechRef.current || interim) {
+              const toSend = (accumulatedSpeechRef.current + ' ' + interim).trim();
+              if (toSend) {
+                handleSendAnswer(toSend);
+              }
+            }
+          }, 2500);
+        }
       };
 
       recognition.onerror = (e: any) => {
         console.warn('Speech recognition error:', e?.error);
-        if (e?.error === 'not-allowed') {
-          alert('Microphone access was denied. Please allow microphone permissions in your browser URL bar.');
-        }
         setIsListening(false);
       };
 
@@ -284,13 +300,25 @@ export const VoiceAndCameraAssistant: React.FC<VoiceAndCameraAssistantProps> = (
       alert('Speech Recognition requires Chrome, Edge, or a Web Speech-compatible browser.');
       return;
     }
+
     if (isListening) {
+      // Stopping mic -> Immediately send whatever was spoken!
+      if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
       try { recognitionRef.current.stop(); } catch (e) {}
       setIsListening(false);
-      setInterimText('');
+
+      const toSend = (accumulatedSpeechRef.current || liveTranscript || inputQuery).trim();
+      if (toSend) {
+        handleSendAnswer(toSend);
+      }
+      setLiveTranscript('');
+      accumulatedSpeechRef.current = '';
     } else {
       window.speechSynthesis.cancel();
       setIsSpeaking(false);
+      accumulatedSpeechRef.current = '';
+      setLiveTranscript('');
+      setInputQuery('');
       try {
         recognitionRef.current.start();
         setIsListening(true);
@@ -300,34 +328,38 @@ export const VoiceAndCameraAssistant: React.FC<VoiceAndCameraAssistantProps> = (
     }
   };
 
-  // Submit Answer -> AI Dynamically Analyzes Exactly What You Said & Asks Next Question
+  // Submit Message to AI
   const handleSendAnswer = async (answerText?: string) => {
-    const answer = answerText || (inputQuery + (interimText ? ' ' + interimText : '')).trim();
-    if (!answer || isAiThinking) return;
+    const textToSend = (answerText || inputQuery || liveTranscript).trim();
+    if (!textToSend || isAiThinking) return;
+
+    if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
 
     if (isListening && recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch (e) {}
       setIsListening(false);
-      setInterimText('');
     }
 
-    // 1. Post User Answer
+    // Clear speech buffers
+    setInputQuery('');
+    setLiveTranscript('');
+    accumulatedSpeechRef.current = '';
+
+    // 1. Post User Message
     const userMsg: VoiceMessage = {
       id: `user-${Date.now()}`,
       sender: 'user',
-      text: answer,
+      text: textToSend,
       timestamp: new Date().toLocaleTimeString(),
     };
     setMessages(prev => [...prev, userMsg]);
-    setInputQuery('');
-    setInterimText('');
     setIsAiThinking(true);
 
-    chatHistoryRef.current.push({ role: 'user', parts: [{ text: answer }] });
+    chatHistoryRef.current.push({ role: 'user', parts: [{ text: textToSend }] });
 
-    // 2. AI Evaluates & Generates Dynamic Next Question
+    // 2. AI Generates Response (General Gemini + Technical Interview reasoning)
     const { text: responseText, nextTurnIndex } = await askGeminiInterviewAssistant(
-      answer,
+      textToSend,
       activeProfile,
       apiKey,
       currentQuestionIndex,
@@ -337,7 +369,7 @@ export const VoiceAndCameraAssistant: React.FC<VoiceAndCameraAssistantProps> = (
     chatHistoryRef.current.push({ role: 'model', parts: [{ text: responseText }] });
     setCurrentQuestionIndex(nextTurnIndex);
 
-    // 3. Post AI Question & Feedback
+    // 3. Post AI Response
     const aiMsg: VoiceMessage = {
       id: `ai-${Date.now()}`,
       sender: 'assistant',
@@ -347,7 +379,7 @@ export const VoiceAndCameraAssistant: React.FC<VoiceAndCameraAssistantProps> = (
     setMessages(prev => [...prev, aiMsg]);
     setIsAiThinking(false);
 
-    // 4. AI Speaks the response aloud in voice
+    // 4. Speak response aloud in voice
     speakText(responseText);
   };
 
@@ -426,21 +458,21 @@ export const VoiceAndCameraAssistant: React.FC<VoiceAndCameraAssistantProps> = (
                 </div>
               </div>
               <div className="text-right">
-                <span className="text-[10px] font-mono uppercase block" style={{ color: 'var(--muted)' }}>Round</span>
+                <span className="text-[10px] font-mono uppercase block" style={{ color: 'var(--muted)' }}>Mode</span>
                 <span className="font-mono font-bold text-xs" style={{ color: 'var(--color-primary)' }}>
-                  Question {Math.min(currentQuestionIndex + 1, 4)} / 4
+                  Gemini AI + Panel
                 </span>
               </div>
             </div>
 
-            {/* Real-Time Audio Activity Visualizer */}
+            {/* Real-Time Audio Activity Waveform while listening */}
             {isListening && (
-              <div className="mt-3 p-2.5 rounded-xl flex items-center justify-between animate-fadeIn"
+              <div className="mt-3 p-3 rounded-xl flex items-center justify-between animate-fadeIn"
                 style={{ background: 'rgba(200,255,87,0.1)', border: '1px solid rgba(200,255,87,0.3)' }}>
                 <div className="flex items-center gap-2">
                   <Activity className="w-4 h-4 animate-pulse" style={{ color: 'var(--color-primary)' }} />
                   <span className="text-xs font-medium font-mono" style={{ color: 'var(--color-primary)' }}>
-                    Mic Active — Listening...
+                    Listening... (Auto-sends on pause)
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -457,17 +489,18 @@ export const VoiceAndCameraAssistant: React.FC<VoiceAndCameraAssistantProps> = (
           <div className="flex items-center justify-between pt-3" style={{ borderTop: '1px solid var(--border)' }}>
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium" style={{ color: 'var(--muted)' }}>
-                {isListening ? '🔴 Recording voice...' : isSpeaking ? '🔊 AI is speaking...' : 'Tap mic to speak answer'}
+                {isListening ? '🔴 Speak now...' : isSpeaking ? '🔊 AI is speaking...' : 'Tap mic to speak'}
               </span>
             </div>
             <div className="flex items-center gap-2">
               {isListening && (
                 <button
                   onClick={() => handleSendAnswer()}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-md"
                   style={{ background: 'var(--color-primary)', color: 'var(--color-text-on-primary)' }}
                 >
-                  Submit Answer ➔
+                  <span>Send</span>
+                  <Send className="w-3 h-3" />
                 </button>
               )}
               <button
@@ -479,7 +512,7 @@ export const VoiceAndCameraAssistant: React.FC<VoiceAndCameraAssistantProps> = (
                   color: isListening ? 'var(--accent3)' : 'var(--color-primary)',
                   boxShadow: isListening ? '0 0 16px rgba(248,113,113,0.3)' : 'none',
                 }}
-                title={isListening ? 'Click to stop recording' : 'Click to start speaking'}
+                title={isListening ? 'Click to stop & send voice' : 'Click to start speaking'}
               >
                 {isListening ? <Mic className="w-5 h-5 animate-pulse" /> : <MicOff className="w-5 h-5" />}
               </button>
@@ -498,10 +531,10 @@ export const VoiceAndCameraAssistant: React.FC<VoiceAndCameraAssistantProps> = (
               </div>
               <div>
                 <h4 className="font-syne font-bold text-sm" style={{ color: 'var(--text)' }}>
-                  Interactive AI Technical Interviewer
+                  Cargonet Gemini AI Interviewer
                 </h4>
                 <span className="text-[10px] font-mono" style={{ color: isSpeaking ? 'var(--color-primary)' : 'var(--muted)' }}>
-                  {isAiThinking ? 'Analyzing your answer...' : isSpeaking ? '🔊 Asking Question...' : '● Live 2-Way Session'}
+                  {isAiThinking ? 'Analyzing response...' : isSpeaking ? '🔊 Speaking...' : '● Live 2-Way Session'}
                 </span>
               </div>
             </div>
@@ -525,7 +558,7 @@ export const VoiceAndCameraAssistant: React.FC<VoiceAndCameraAssistantProps> = (
                   }}
                 >
                   <div className="flex items-center justify-between text-[10px] font-mono mb-1" style={{ color: 'var(--muted)' }}>
-                    <span>{m.sender === 'user' ? 'Candidate (You)' : 'AI Interviewer'}</span>
+                    <span>{m.sender === 'user' ? 'You' : 'Gemini AI'}</span>
                     <span>{m.timestamp}</span>
                   </div>
                   <p className="whitespace-pre-line">{m.text}</p>
@@ -535,20 +568,20 @@ export const VoiceAndCameraAssistant: React.FC<VoiceAndCameraAssistantProps> = (
                       className="mt-2 flex items-center gap-1 text-[10px] font-mono transition-colors hover:underline"
                       style={{ color: 'var(--color-primary)' }}
                     >
-                      <Volume2 className="w-3 h-3" /> Replay Question in Voice
+                      <Volume2 className="w-3 h-3" /> Replay Voice
                     </button>
                   )}
                 </div>
               </div>
             ))}
 
-            {/* Live Real-Time Speech Preview Bubble while speaking */}
-            {isListening && interimText && (
+            {/* Live Real-Time Speech Bubble while speaking */}
+            {isListening && liveTranscript && (
               <div className="flex justify-end animate-fadeIn">
                 <div className="max-w-[85%] p-3 rounded-2xl text-xs italic border"
                   style={{ background: 'rgba(200,255,87,0.05)', borderColor: 'rgba(200,255,87,0.3)', color: 'var(--text)' }}>
-                  <span className="text-[10px] font-mono block not-italic mb-1 opacity-60">Transcribing live voice...</span>
-                  "{interimText}"
+                  <span className="text-[10px] font-mono block not-italic mb-1 opacity-60">Live voice transcription:</span>
+                  "{liveTranscript}"
                 </div>
               </div>
             )}
@@ -558,28 +591,35 @@ export const VoiceAndCameraAssistant: React.FC<VoiceAndCameraAssistantProps> = (
                 <div className="p-3 rounded-2xl text-xs flex items-center gap-2"
                   style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--color-primary)' }}>
                   <Sparkles className="w-3.5 h-3.5 animate-spin" />
-                  <span>Evaluating answer & formulating follow-up question...</span>
+                  <span>Gemini AI is thinking...</span>
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Answer Suggestion Pills */}
+          {/* Quick Prompt Suggestion Pills */}
           <div className="flex flex-wrap gap-1.5 mb-2">
             <button
-              onClick={() => handleSendAnswer("I led the prompt engineering & model routing between SLMs and GPT-4, while my teammate implemented the async message queue in production.")}
-              className="px-2.5 py-1 rounded-md text-[10px] font-mono transition-colors hover:border-accent1 truncate max-w-[280px]"
+              onClick={() => handleSendAnswer("What is Python and why is it used in AI?")}
+              className="px-2.5 py-1 rounded-md text-[10px] font-mono transition-colors hover:border-accent1 truncate max-w-[240px]"
               style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
             >
-              "I led prompt design & SLM routing..."
+              "What is Python in AI?"
             </button>
             <button
-              onClick={() => handleSendAnswer("We instituted a mandatory pre-deploy evaluation test set with a git-hook checklist to guarantee prompt regression testing.")}
-              className="px-2.5 py-1 rounded-md text-[10px] font-mono transition-colors hover:border-accent1 truncate max-w-[280px]"
+              onClick={() => handleSendAnswer("How do you handle production outages and postmortems?")}
+              className="px-2.5 py-1 rounded-md text-[10px] font-mono transition-colors hover:border-accent1 truncate max-w-[240px]"
               style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
             >
-              "We instituted pre-deploy checklists..."
+              "How to handle outages?"
+            </button>
+            <button
+              onClick={() => handleSendAnswer("What contradictions did the Skeptic find in Rohan's resume?")}
+              className="px-2.5 py-1 rounded-md text-[10px] font-mono transition-colors hover:border-accent1 truncate max-w-[240px]"
+              style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+            >
+              "Why is Rohan No-Hire?"
             </button>
           </div>
 
@@ -591,18 +631,18 @@ export const VoiceAndCameraAssistant: React.FC<VoiceAndCameraAssistantProps> = (
           >
             <input
               type="text"
-              value={inputQuery + (interimText ? ' ' + interimText : '')}
-              onChange={(e) => { setInputQuery(e.target.value); setInterimText(''); }}
-              placeholder={isListening ? '🎤 Listening... your voice will appear here live' : 'Type your answer or tap mic to speak...'}
+              value={inputQuery || liveTranscript}
+              onChange={(e) => { setInputQuery(e.target.value); setLiveTranscript(''); }}
+              placeholder={isListening ? '🎤 Listening... speaking will auto-send' : 'Type any question or answer (or tap mic to speak)...'}
               className="flex-1 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none"
               style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }}
             />
             <button
               type="submit"
-              disabled={isAiThinking || (!inputQuery.trim() && !interimText.trim())}
+              disabled={isAiThinking || (!inputQuery.trim() && !liveTranscript.trim())}
               className="px-4 py-2.5 rounded-xl transition-all disabled:opacity-30 flex items-center justify-center"
               style={{ background: 'var(--color-primary)', color: 'var(--color-text-on-primary)' }}
-              title="Submit your answer to AI interviewer"
+              title="Send to Gemini AI"
             >
               <Send className="w-4 h-4" />
             </button>

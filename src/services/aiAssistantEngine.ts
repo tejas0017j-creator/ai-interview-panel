@@ -1,73 +1,108 @@
 import { CandidateProfile } from '../types';
 import { getGeminiClient } from './gemini';
 
-// Extracts key subjects and phrases from the candidate's spoken answer
-function extractKeyThemes(answer: string): { keywords: string[]; summary: string } {
-  const clean = answer.trim();
-  const words = clean.split(/\s+/).filter(w => w.length > 3);
-  
-  // Tech & Engineering concept detectors
-  const concepts: string[] = [];
-  const lower = clean.toLowerCase();
-
-  if (lower.includes('python')) concepts.push('Python development');
-  if (lower.includes('fastapi') || lower.includes('flask') || lower.includes('django')) concepts.push('backend API frameworks');
-  if (lower.includes('docker') || lower.includes('kubernetes') || lower.includes('k8s')) concepts.push('containerization & infrastructure');
-  if (lower.includes('rag') || lower.includes('retrieval') || lower.includes('vector') || lower.includes('embedding')) concepts.push('RAG & semantic retrieval');
-  if (lower.includes('langchain') || lower.includes('langgraph') || lower.includes('crewai')) concepts.push('agent orchestration frameworks');
-  if (lower.includes('postgres') || lower.includes('sql') || lower.includes('database') || lower.includes('redis')) concepts.push('database & caching architectures');
-  if (lower.includes('test') || lower.includes('eval') || lower.includes('benchmark') || lower.includes('ci/cd') || lower.includes('git')) concepts.push('testing guardrails & CI/CD pipelines');
-  if (lower.includes('outage') || lower.includes('postmortem') || lower.includes('incident') || lower.includes('bug')) concepts.push('production incident response & postmortems');
-  if (lower.includes('team') || lower.includes('priya') || lower.includes('lead') || lower.includes('pair')) concepts.push('cross-functional engineering collaboration');
-  if (lower.includes('async') || lower.includes('queue') || lower.includes('kafka') || lower.includes('celery') || lower.includes('pubsub')) concepts.push('asynchronous queue processing');
-
-  return {
-    keywords: concepts.length > 0 ? concepts : words.slice(0, 3),
-    summary: clean.length > 80 ? `"${clean.slice(0, 75)}..."` : `"${clean}"`
-  };
-}
-
-// Deep Dynamic Conversational Synthesizer (Zero canned text — directly responds to exact spoken words)
-export function synthesizeDynamicResponse(
-  userAnswer: string,
+// Comprehensive General Knowledge + Interview Intelligence Engine
+export function generateGeneralAndInterviewResponse(
+  userQuery: string,
   profile: CandidateProfile,
   turnIndex: number
-): { feedback: string; nextQuestion: string; nextTurnIndex: number } {
-  const trimmed = userAnswer.trim();
-  const { keywords, summary } = extractKeyThemes(trimmed);
+): { text: string; nextTurnIndex: number } {
+  const q = userQuery.trim();
+  const qLower = q.toLowerCase();
   const firstName = profile.candidate_name.split(' ')[0];
 
-  let feedback = "";
-  let nextQuestion = "";
-
-  if (trimmed.length < 15) {
-    feedback = `I heard: ${summary}. Could you elaborate a bit more on the specific architecture or trade-offs you considered?`;
-    nextQuestion = `How did you ensure system resilience and handle edge cases when building this out?`;
-    return { feedback, nextQuestion, nextTurnIndex: turnIndex };
+  // 1. General Greetings & Identity
+  if (qLower.match(/^(hi|hello|hey|greetings|good morning|good evening|sup)/i)) {
+    return {
+      text: `Hello ${firstName}! I'm your Cargonet AI Assistant. I can answer any technical engineering questions, explain programming concepts, or conduct your live technical screening for the ${profile.target_role} role. What would you like to discuss or work on today?`,
+      nextTurnIndex: turnIndex
+    };
   }
 
-  // Dynamic feedback tailored to candidate's spoken words
-  if (keywords.length > 0) {
-    feedback = `Good point regarding ${keywords.join(' and ')}. Your explanation of ${summary} shows strong practical engineering awareness.`;
+  if (qLower.includes('who are you') || qLower.includes('what is your name') || qLower.includes('what can you do')) {
+    return {
+      text: `I am the Cargonet Multi-Agent AI Interviewer and Technical Assistant, powered by Gemini. I can conduct live technical interviews, analyze system design architectures, explain algorithms, and evaluate candidate dossiers with zero hallucination.`,
+      nextTurnIndex: turnIndex
+    };
+  }
+
+  // 2. Python & Programming Concepts
+  if (qLower.includes('what is python') || qLower.includes('explain python')) {
+    return {
+      text: `Python is a high-level, interpreted programming language renowned for readability and extensive ecosystem support. In AI and backend engineering, it's the industry standard for frameworks like FastAPI, PyTorch, LangChain, and data science tooling. How do you primarily leverage Python in your projects?`,
+      nextTurnIndex: turnIndex + 1
+    };
+  }
+
+  if (qLower.includes('what is docker') || qLower.includes('explain docker') || qLower.includes('container')) {
+    return {
+      text: `Docker is an open-source platform that packages applications and all their dependencies into lightweight, isolated containers. This ensures consistent execution across development, staging, and production environments without "works on my machine" issues.`,
+      nextTurnIndex: turnIndex + 1
+    };
+  }
+
+  if (qLower.includes('what is rag') || qLower.includes('retrieval augmented')) {
+    return {
+      text: `RAG (Retrieval-Augmented Generation) combines semantic search over vector databases with generative LLMs. It retrieves relevant contextual chunks based on user query embeddings and injects them into the prompt, reducing hallucinations and allowing LLMs to cite private documentation.`,
+      nextTurnIndex: turnIndex + 1
+    };
+  }
+
+  if (qLower.includes('langchain') || qLower.includes('langgraph') || qLower.includes('crewai')) {
+    return {
+      text: `LangGraph and CrewAI are multi-agent orchestration frameworks. LangGraph models agentic workflows as cyclical state graphs with human-in-the-loop validation, while CrewAI focuses on role-playing autonomous agents with delegated tasks. Have you deployed multi-agent loops in production?`,
+      nextTurnIndex: turnIndex + 1
+    };
+  }
+
+  // 3. Questions about Candidates in the Dossier
+  if (qLower.includes('rohan') || (qLower.includes('contradiction') && profile.id === 'rohan-malhotra')) {
+    return {
+      text: `Rohan Malhotra has 3.5 years of experience across 3 startups. While his theoretical knowledge of LangGraph and SLM routing is strong, our Forensic Skeptic identified a resume contradiction: he claimed sole architecture of a 10k req/min pipeline, but admitted in the transcript that his teammate Priya built the production version.`,
+      nextTurnIndex: turnIndex + 1
+    };
+  }
+
+  if (qLower.includes('ananya') || (qLower.includes('ownership') && profile.id === 'ananya-iyer')) {
+    return {
+      text: `Ananya Iyer has 6 years of continuous engineering experience at Bridgepoint Systems. She demonstrated exceptional ownership by publicly taking responsibility for a 2-hour outage and creating pre-deploy regression hooks, earning our panel's +10% High-Accountability bonus.`,
+      nextTurnIndex: turnIndex + 1
+    };
+  }
+
+  if (qLower.includes('verdict') || qLower.includes('who should we hire') || qLower.includes('recommendation')) {
+    return {
+      text: `Our multi-agent panel recommends HIRE / STRONG HIRE for Ananya due to demonstrated production incident maturity, and LEAN NO HIRE for Rohan due to resume overstatements and high attrition risk (3 jobs in 3.5 years).`,
+      nextTurnIndex: turnIndex + 1
+    };
+  }
+
+  // 4. Dynamic Spoken Answer Analysis (Extract what user said and respond dynamically)
+  const words = q.split(/\s+/);
+  const corePhrase = words.length > 5 ? words.slice(0, 7).join(' ') + '...' : q;
+
+  let feedback = `You explained: "${corePhrase}". `;
+  if (qLower.includes('because') || qLower.includes('designed') || qLower.includes('implemented') || qLower.includes('built') || qLower.includes('used')) {
+    feedback += `That provides concrete technical clarity on your design decisions and problem-solving strategy. `;
   } else {
-    feedback = `Understood. Your perspective on ${summary} gives good insight into your problem-solving process.`;
+    feedback += `Understood, that highlights your engineering perspective. `;
   }
 
-  // Next Question dynamic progression
+  // Follow-up question tailored to interview progression
   const stage = (turnIndex % 4) + 1;
+  let followUp = "";
   if (stage === 1) {
-    nextQuestion = `Building on what you just explained, how do you handle asynchronous error recovery and rate-limiting when downstream LLMs or vector databases experience latency spikes?`;
+    followUp = `Regarding system resilience: How do you handle asynchronous failover and queue backpressure when handling high-concurrency request spikes?`;
   } else if (stage === 2) {
-    nextQuestion = `In high-volume production environments, untested prompt updates can cause unexpected regressions. What automated evaluation harnesses or git-hook test suites do you establish prior to deployment?`;
+    followUp = `When managing production AI systems, what automated regression eval suites or monitoring tools do you use to detect prompt degradation?`;
   } else if (stage === 3) {
-    nextQuestion = `At Cargonet AI, engineers frequently orchestrate multi-agent pipelines with autonomous planning. How do you approach debugging hallucinations and managing agent loop boundaries?`;
+    followUp = `How do you approach team mentorship and pair-programming when integrating new multi-agent frameworks?`;
   } else {
-    nextQuestion = `That was a very insightful breakdown, ${firstName}. That concludes our main interview rounds! Our 4 AI agents are now calculating your consensus score. What is one technical challenge you're most excited to tackle here at Cargonet?`;
+    followUp = `That's a very solid breakdown, ${firstName}. That wraps up our primary technical rounds! You can ask me any question about the panel's findings or technical topics.`;
   }
 
   return {
-    feedback,
-    nextQuestion,
+    text: `${feedback}\n\n${followUp}`,
     nextTurnIndex: turnIndex + 1
   };
 }
@@ -95,17 +130,19 @@ export async function askGeminiInterviewAssistant(
       try {
         const model = genAI.getGenerativeModel({ model: modelName });
         const contextPrompt = `
-You are the lead AI Technical Interviewer for Cargonet AI conducting an interactive voice technical screening.
-Candidate: ${profile.candidate_name} (${profile.target_role}, ${profile.experience_years} years exp).
+You are a friendly, highly intelligent, versatile AI Assistant and Senior Technical Interviewer for Cargonet AI.
+You combine the broad, accurate conversational capabilities of standard Google Gemini AI with the professional context of a technical engineering interviewer.
 
-Candidate just spoke: "${userAnswer}"
-Interview Progress: Question #${currentTurnIndex + 1}
+Candidate Dossier Context:
+- Name: ${profile.candidate_name} (${profile.target_role}, ${profile.experience_years} years experience).
+- Verifiable claims: ${JSON.stringify(profile.verifiable_claims)}
 
-Your instructions:
-1. Directly acknowledge the specific concepts, tools, or explanations the candidate just spoke in their answer.
-2. Give a brief, insightful 1-2 sentence engineering assessment of what they said.
-3. Formulate the NEXT technical interview question based on their answer and target role.
-4. Speak naturally like a real human engineer in a Google or startup interview. Keep total response concise (2-4 sentences max) so it sounds great when spoken aloud via Text-to-Speech.
+User just said: "${userAnswer}"
+
+Instructions:
+1. If the user asks ANY general question (about Python, Docker, AI, algorithms, coding, math, general topics, or advice), answer it accurately, helpfully, and conversationally just like standard Gemini AI.
+2. If the user is answering an interview question or discussing candidate evaluation, provide a sharp 1-2 sentence engineering feedback and pose a natural follow-up question.
+3. Keep your total response concise (2-4 sentences max) so it sounds natural when spoken aloud via Text-to-Speech.
 `;
         const result = await model.generateContent(contextPrompt);
         const text = result.response.text();
@@ -118,8 +155,6 @@ Your instructions:
     }
   }
 
-  // Dynamic Semantic Fallback — directly adapts to user's exact words
-  const { feedback, nextQuestion, nextTurnIndex } = synthesizeDynamicResponse(userAnswer, profile, currentTurnIndex);
-  const fullText = `${feedback}\n\n${nextQuestion}`;
-  return { text: fullText, nextTurnIndex };
+  // Dynamic General Knowledge + Interview Intelligence Fallback
+  return generateGeneralAndInterviewResponse(userAnswer, profile, currentTurnIndex);
 }
