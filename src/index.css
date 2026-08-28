@@ -1,0 +1,169 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── DARK MODE (default) ── */
+:root {
+  --bg: #09090f;
+  --surface: #12121c;
+  --card: #161624;
+  --border: rgba(255, 255, 255, 0.08);
+  --accent1: #bbf7d0; /* subtle classic sage/mint */
+  --accent2: #c4b5fd; /* soft lavender */
+  --accent3: #fca5a5; /* soft rose */
+  --accent4: #99f6e4; /* soft opal teal */
+  --text: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --muted: #64748b;
+  --mode: dark;
+}
+
+/* ── LIGHT MODE ── */
+html.light {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --border: rgba(15, 23, 42, 0.08);
+  --accent1: #15803d; /* deep classic emerald */
+  --accent2: #6d28d9; /* classic royal violet */
+  --accent3: #b91c1c; /* classic ruby */
+  --accent4: #0f766e; /* classic deep teal */
+  --text: #0f172a;
+  --text-secondary: #334155;
+  --muted: #64748b;
+  --mode: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  overflow-x: hidden;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+  letter-spacing: -0.02em;
+}
+
+/* Subtle background accent glow */
+.hero-bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(160px);
+  opacity: 0.08;
+  animation: drift 16s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+html.light .hero-bg-orb {
+  opacity: 0.04;
+  filter: blur(200px);
+}
+
+.orb1 { width: 550px; height: 550px; background: var(--accent2); top: -200px; right: -100px; }
+.orb2 { width: 450px; height: 450px; background: var(--accent4); bottom: -100px; left: 10%; animation-delay: -5s; }
+.orb3 { width: 350px; height: 350px; background: var(--accent1); top: 35%; left: 45%; animation-delay: -9s; opacity: 0.06; }
+
+@keyframes drift {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(25px, 20px) scale(1.04); }
+}
+
+/* Glass Panels with refined classic styling */
+.glass-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+html.light .glass-panel {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 12px 36px rgba(0,0,0,0.03);
+}
+
+/* Bento Card */
+.bento-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 1.75rem;
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.bento-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+}
+html.light .bento-card:hover {
+  border-color: rgba(0, 0, 0, 0.12);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+}
+
+/* Classic Elegant Buttons */
+.btn-primary {
+  background: var(--text);
+  color: var(--bg);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.01em;
+  padding: 12px 26px;
+  border-radius: 100px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.25s ease;
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  opacity: 0.95;
+}
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-ghost {
+  background: var(--surface);
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 11px 22px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.25s ease;
+}
+.btn-ghost:hover {
+  border-color: var(--muted);
+  transform: translateY(-1px);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 3px; opacity: 0.3; }
+
+/* Utilities */
+.section-label {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
