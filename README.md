@@ -69,7 +69,7 @@ Calculates the final hiring verdict using domain weighting (Tech 40%, HM 40%, HR
 ---
 
 ## 🚀 Quick Start & Installation
-
+Website link- https://ai-interview-panel-2m892evtf-tejas0017j-9018s-projects.vercel.app/
 ### Prerequisites
 - Node.js (v18.0 or higher)
 - npm or yarn
