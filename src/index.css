@@ -2,21 +2,49 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── DARK MODE (default) ── */
+/* =========================================
+   COLOR PALETTE OPTIONS
+   Keep only one active primary palette!
+   ========================================= */
+
+/* OPTION 1: Sapphire Blue (Active - Recommended) */
 :root {
+  --color-primary: #2563EB;
+  --color-primary-hover: #1D4ED8;
+  --color-primary-bg-subtle: #1E3A8A;
+  --color-text-on-primary: #FFFFFF;
+
   --bg: #09090f;
   --surface: #12121c;
   --card: #161624;
   --border: rgba(255, 255, 255, 0.08);
-  --accent1: #bbf7d0; /* subtle classic sage/mint */
-  --accent2: #c4b5fd; /* soft lavender */
-  --accent3: #fca5a5; /* soft rose */
-  --accent4: #99f6e4; /* soft opal teal */
+  --accent1: var(--color-primary); /* Sapphire Blue */
+  --accent2: #818cf8; /* Indigo */
+  --accent3: #f87171; /* Crimson alert */
+  --accent4: #38bdf8; /* Sky blue */
   --text: #f8fafc;
   --text-secondary: #cbd5e1;
   --muted: #64748b;
   --mode: dark;
 }
+
+/* OPTION 2: Light Blue (Uncomment to use)
+:root {
+  --color-primary: #0EA5E9;
+  --color-primary-hover: #0284C7;
+  --color-primary-bg-subtle: #0C4A6E; 
+  --color-text-on-primary: #FFFFFF;
+}
+*/
+
+/* OPTION 3: Emerald Green (Uncomment to use)
+:root {
+  --color-primary: #10B981;
+  --color-primary-hover: #059669;
+  --color-primary-bg-subtle: #064E3B;
+  --color-text-on-primary: #FFFFFF;
+}
+*/
 
 /* ── LIGHT MODE ── */
 html.light {
@@ -24,10 +52,10 @@ html.light {
   --surface: #ffffff;
   --card: #ffffff;
   --border: rgba(15, 23, 42, 0.08);
-  --accent1: #15803d; /* deep classic emerald */
-  --accent2: #6d28d9; /* classic royal violet */
-  --accent3: #b91c1c; /* classic ruby */
-  --accent4: #0f766e; /* classic deep teal */
+  --accent1: var(--color-primary);
+  --accent2: #4f46e5;
+  --accent3: #dc2626;
+  --accent4: #0284c7;
   --text: #0f172a;
   --text-secondary: #334155;
   --muted: #64748b;
@@ -58,25 +86,25 @@ h1, h2, h3, h4 {
   position: absolute;
   border-radius: 50%;
   filter: blur(160px);
-  opacity: 0.08;
+  opacity: 0.1;
   animation: drift 16s ease-in-out infinite alternate;
   pointer-events: none;
 }
 html.light .hero-bg-orb {
-  opacity: 0.04;
+  opacity: 0.05;
   filter: blur(200px);
 }
 
-.orb1 { width: 550px; height: 550px; background: var(--accent2); top: -200px; right: -100px; }
-.orb2 { width: 450px; height: 450px; background: var(--accent4); bottom: -100px; left: 10%; animation-delay: -5s; }
-.orb3 { width: 350px; height: 350px; background: var(--accent1); top: 35%; left: 45%; animation-delay: -9s; opacity: 0.06; }
+.orb1 { width: 550px; height: 550px; background: var(--color-primary); top: -200px; right: -100px; }
+.orb2 { width: 450px; height: 450px; background: var(--accent2); bottom: -100px; left: 10%; animation-delay: -5s; }
+.orb3 { width: 350px; height: 350px; background: var(--accent4); top: 35%; left: 45%; animation-delay: -9s; opacity: 0.06; }
 
 @keyframes drift {
   0% { transform: translate(0, 0) scale(1); }
   100% { transform: translate(25px, 20px) scale(1.04); }
 }
 
-/* Glass Panels with refined classic styling */
+/* Glass Panels */
 .glass-panel {
   background: var(--card);
   border: 1px solid var(--border);
@@ -97,40 +125,47 @@ html.light .glass-panel {
 }
 .bento-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.16);
+  border-color: rgba(37, 99, 235, 0.3);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
 }
 html.light .bento-card:hover {
-  border-color: rgba(0, 0, 0, 0.12);
+  border-color: rgba(37, 99, 235, 0.2);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
 }
 
-/* Classic Elegant Buttons */
+/* =========================================
+   BUTTON STYLES
+   Applies the variables to your UI
+   ========================================= */
+
 .btn-primary {
-  background: var(--text);
-  color: var(--bg);
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 600;
-  font-size: 0.85rem;
-  letter-spacing: 0.01em;
-  padding: 12px 26px;
-  border-radius: 100px;
+  background-color: var(--color-primary);
+  color: var(--color-text-on-primary);
   border: none;
-  cursor: pointer;
+  border-radius: 9999px; /* Rounded pill shape */
+  padding: 12px 24px;
+  font-weight: 500;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  transition: all 0.25s ease;
+  transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  cursor: pointer;
+  letter-spacing: 0.01em;
 }
+
 .btn-primary:hover {
+  background-color: var(--color-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-  opacity: 0.95;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+  cursor: pointer;
 }
+
 .btn-primary:disabled {
   opacity: 0.4;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 .btn-ghost {
@@ -140,16 +175,17 @@ html.light .bento-card:hover {
   font-size: 0.85rem;
   font-weight: 500;
   padding: 11px 22px;
-  border-radius: 100px;
+  border-radius: 9999px;
   border: 1px solid var(--border);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease-in-out;
 }
 .btn-ghost:hover {
-  border-color: var(--muted);
+  border-color: var(--color-primary);
   transform: translateY(-1px);
 }
 
@@ -163,7 +199,7 @@ html.light .bento-card:hover {
   font-size: 11px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--color-primary);
   font-weight: 600;
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
