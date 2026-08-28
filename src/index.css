@@ -7,32 +7,32 @@
    Keep only one active primary palette!
    ========================================= */
 
-/* OPTION 1: Sapphire Blue (Active - Recommended) */
+/* OPTION 1: Electric Lime / Signature Green (Active) */
 :root {
-  --color-primary: #2563EB;
-  --color-primary-hover: #1D4ED8;
-  --color-primary-bg-subtle: #1E3A8A;
-  --color-text-on-primary: #FFFFFF;
+  --color-primary: #c8ff57;
+  --color-primary-hover: #b4f03a;
+  --color-primary-bg-subtle: rgba(200, 255, 87, 0.15);
+  --color-text-on-primary: #09090f;
 
   --bg: #09090f;
   --surface: #12121c;
   --card: #161624;
   --border: rgba(255, 255, 255, 0.08);
-  --accent1: var(--color-primary); /* Sapphire Blue */
-  --accent2: #818cf8; /* Indigo */
-  --accent3: #f87171; /* Crimson alert */
-  --accent4: #38bdf8; /* Sky blue */
+  --accent1: var(--color-primary); /* Signature Green */
+  --accent2: #818cf8; /* Soft Indigo */
+  --accent3: #f87171; /* Crimson Alert */
+  --accent4: #2dd4bf; /* Hyper Teal */
   --text: #f8fafc;
   --text-secondary: #cbd5e1;
   --muted: #64748b;
   --mode: dark;
 }
 
-/* OPTION 2: Light Blue (Uncomment to use)
+/* OPTION 2: Sapphire Blue (Uncomment to use)
 :root {
-  --color-primary: #0EA5E9;
-  --color-primary-hover: #0284C7;
-  --color-primary-bg-subtle: #0C4A6E; 
+  --color-primary: #2563EB;
+  --color-primary-hover: #1D4ED8;
+  --color-primary-bg-subtle: #1E3A8A;
   --color-text-on-primary: #FFFFFF;
 }
 */
@@ -52,10 +52,13 @@ html.light {
   --surface: #ffffff;
   --card: #ffffff;
   --border: rgba(15, 23, 42, 0.08);
+  --color-primary: #15803d; /* Emerald in light mode */
+  --color-primary-hover: #166534;
+  --color-text-on-primary: #ffffff;
   --accent1: var(--color-primary);
   --accent2: #4f46e5;
   --accent3: #dc2626;
-  --accent4: #0284c7;
+  --accent4: #0d9488;
   --text: #0f172a;
   --text-secondary: #334155;
   --muted: #64748b;
@@ -86,7 +89,7 @@ h1, h2, h3, h4 {
   position: absolute;
   border-radius: 50%;
   filter: blur(160px);
-  opacity: 0.1;
+  opacity: 0.12;
   animation: drift 16s ease-in-out infinite alternate;
   pointer-events: none;
 }
@@ -95,9 +98,9 @@ html.light .hero-bg-orb {
   filter: blur(200px);
 }
 
-.orb1 { width: 550px; height: 550px; background: var(--color-primary); top: -200px; right: -100px; }
-.orb2 { width: 450px; height: 450px; background: var(--accent2); bottom: -100px; left: 10%; animation-delay: -5s; }
-.orb3 { width: 350px; height: 350px; background: var(--accent4); top: 35%; left: 45%; animation-delay: -9s; opacity: 0.06; }
+.orb1 { width: 550px; height: 550px; background: var(--accent2); top: -200px; right: -100px; }
+.orb2 { width: 450px; height: 450px; background: var(--accent4); bottom: -100px; left: 10%; animation-delay: -5s; }
+.orb3 { width: 350px; height: 350px; background: var(--color-primary); top: 35%; left: 45%; animation-delay: -9s; opacity: 0.08; }
 
 @keyframes drift {
   0% { transform: translate(0, 0) scale(1); }
@@ -125,11 +128,11 @@ html.light .glass-panel {
 }
 .bento-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(37, 99, 235, 0.3);
+  border-color: rgba(200, 255, 87, 0.3);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
 }
 html.light .bento-card:hover {
-  border-color: rgba(37, 99, 235, 0.2);
+  border-color: rgba(21, 128, 61, 0.2);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
 }
 
@@ -143,8 +146,8 @@ html.light .bento-card:hover {
   color: var(--color-text-on-primary);
   border: none;
   border-radius: 9999px; /* Rounded pill shape */
-  padding: 12px 24px;
-  font-weight: 500;
+  padding: 12px 26px;
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -157,8 +160,11 @@ html.light .bento-card:hover {
 .btn-primary:hover {
   background-color: var(--color-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 6px 24px rgba(200, 255, 87, 0.35);
   cursor: pointer;
+}
+html.light .btn-primary:hover {
+  box-shadow: 0 6px 20px rgba(21, 128, 61, 0.3);
 }
 
 .btn-primary:disabled {
