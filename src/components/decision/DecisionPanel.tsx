@@ -7,7 +7,8 @@ import {
   CheckCircle2, 
   AlertTriangle, 
   Scale,
-  Sparkles
+  Sparkles,
+  Play
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { FinalAssessmentReport, RecommendationType } from '../../types';
@@ -35,10 +36,10 @@ export const DecisionPanel: React.FC<DecisionPanelProps> = ({
   useEffect(() => {
     if (report && (report.final_recommendation === 'STRONG HIRE' || report.final_recommendation === 'HIRE')) {
       confetti({
-        particleCount: 70,
-        spread: 60,
+        particleCount: 80,
+        spread: 65,
         origin: { y: 0.6 },
-        colors: ['#a3e635', '#8b7cf6', '#2dd4bf']
+        colors: ['#c8ff57', '#818cf8', '#2dd4bf']
       });
     }
   }, [report]);
@@ -54,7 +55,7 @@ export const DecisionPanel: React.FC<DecisionPanelProps> = ({
   };
 
   return (
-    <div className="glass-panel p-5 sm:p-7 rounded-2xl mb-12">
+    <div className="glass-panel p-5 sm:p-8 rounded-2xl mb-14">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-5" style={{ borderBottom: '1px solid var(--border)' }}>
         <div>
@@ -66,12 +67,12 @@ export const DecisionPanel: React.FC<DecisionPanelProps> = ({
             Final Hiring Verdict
           </h3>
           <p className="text-xs mt-0.5 font-light" style={{ color: 'var(--text-secondary)' }}>
-            Weighted synthesis (Tech 40%, HM 40%, HR 20%) with -15% contradiction penalty and +10% ownership bonus.
+            Weighted domain matrix (Tech 40%, HM 40%, HR 20%) with -15% contradiction penalty and +10% ownership bonus.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          {canSynthesize && !report && (
+          {!report && (
             <button
               onClick={onTriggerDecision}
               disabled={isSynthesizing}
@@ -85,7 +86,7 @@ export const DecisionPanel: React.FC<DecisionPanelProps> = ({
               ) : (
                 <>
                   <Award className="w-4 h-4" />
-                  <span>Generate Verdict</span>
+                  <span>Generate Final Verdict</span>
                 </>
               )}
             </button>
@@ -97,31 +98,35 @@ export const DecisionPanel: React.FC<DecisionPanelProps> = ({
               className="btn-ghost text-xs"
             >
               <Download className="w-3.5 h-3.5" style={{ color: 'var(--accent1)' }} />
-              <span>Export JSON</span>
+              <span>Export Audit JSON</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Empty State */}
+      {/* Empty State / Call to Action */}
       {!report && !isSynthesizing && (
-        <div className="py-12 text-center rounded-xl" style={{ border: '1px dashed var(--border)' }}>
-          <Scale className="w-8 h-8 mx-auto mb-2 opacity-30" style={{ color: 'var(--muted)' }} />
-          <p className="font-syne text-sm font-bold" style={{ color: 'var(--text)' }}>Decision Engine Idle</p>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
-            Complete evaluations and debate to generate the final decision report.
+        <div className="py-12 text-center rounded-xl p-6" style={{ border: '1px dashed var(--border)', background: 'var(--surface)' }}>
+          <Scale className="w-9 h-9 mx-auto mb-3 opacity-30" style={{ color: 'var(--accent1)' }} />
+          <p className="font-syne text-base font-bold mb-1" style={{ color: 'var(--text)' }}>Decision Engine Ready</p>
+          <p className="text-xs max-w-md mx-auto mb-5" style={{ color: 'var(--muted)' }}>
+            Click below to synthesize the 4-agent weighted confidence matrix and compute the final hiring verdict.
           </p>
+          <button onClick={onTriggerDecision} className="btn-primary">
+            <Award className="w-4 h-4" />
+            <span>Compute Verdict Now</span>
+          </button>
         </div>
       )}
 
       {/* Synthesizing Loading */}
       {isSynthesizing && (
         <div className="py-12 text-center space-y-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto animate-spin"
-            style={{ background: 'rgba(163,230,53,0.1)', border: '1px solid var(--accent1)' }}>
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center mx-auto animate-spin"
+            style={{ background: 'rgba(200,255,87,0.12)', border: '1px solid var(--accent1)' }}>
             <Scale className="w-5 h-5" style={{ color: 'var(--accent1)' }} />
           </div>
-          <div className="font-syne text-sm font-bold" style={{ color: 'var(--text)' }}>
+          <div className="font-syne text-base font-bold" style={{ color: 'var(--text)' }}>
             Calculating Mathematical Multipliers...
           </div>
           <p className="text-xs font-mono" style={{ color: 'var(--muted)' }}>
@@ -130,20 +135,20 @@ export const DecisionPanel: React.FC<DecisionPanelProps> = ({
         </div>
       )}
 
-      {/* Report */}
+      {/* Report Result */}
       {report && (
         <div className="space-y-6 animate-fadeIn">
           {/* Main Verdict Card */}
           {(() => {
             const style = REC_STYLES[report.final_recommendation];
             return (
-              <div className="p-5 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+              <div className="p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
                 style={{ background: 'var(--surface)', border: `2px solid ${style.color}` }}>
                 <div>
                   <span className="text-[10px] font-mono uppercase tracking-wider block mb-1" style={{ color: 'var(--muted)' }}>
                     Consensus Recommendation
                   </span>
-                  <h2 className="font-syne text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: style.color }}>
+                  <h2 className="font-syne text-3xl sm:text-4xl font-extrabold tracking-tight" style={{ color: style.color }}>
                     {style.label}
                   </h2>
                   <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
@@ -151,7 +156,7 @@ export const DecisionPanel: React.FC<DecisionPanelProps> = ({
                   </p>
                 </div>
 
-                <div className="text-right flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto">
+                <div className="text-right flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0" style={{ borderColor: 'var(--border)' }}>
                   <div className="font-syne text-3xl sm:text-4xl font-extrabold" style={{ color: 'var(--text)' }}>
                     {report.final_calculated_index.toFixed(2)}
                     <span className="text-xs font-normal" style={{ color: 'var(--muted)' }}> / 10</span>
@@ -171,7 +176,7 @@ export const DecisionPanel: React.FC<DecisionPanelProps> = ({
                 <span>Technical (40%)</span>
                 <span className="font-bold" style={{ color: 'var(--accent1)' }}>{report.weights_breakdown.technical_final_score.toFixed(1)}</span>
               </div>
-              <div className="h-1 rounded-full overflow-hidden mb-1.5" style={{ background: 'var(--border)' }}>
+              <div className="h-1.5 rounded-full overflow-hidden mb-1.5" style={{ background: 'var(--border)' }}>
                 <div className="h-full rounded-full" style={{ width: `${(report.weights_breakdown.technical_final_score / 10) * 100}%`, background: 'var(--accent1)' }} />
               </div>
               <p className="text-[10px]" style={{ color: 'var(--muted)' }}>Post-debate adjusted score.</p>
@@ -182,7 +187,7 @@ export const DecisionPanel: React.FC<DecisionPanelProps> = ({
                 <span>Hiring Manager (40%)</span>
                 <span className="font-bold" style={{ color: 'var(--accent4)' }}>{report.weights_breakdown.hiring_manager_score.toFixed(1)}</span>
               </div>
-              <div className="h-1 rounded-full overflow-hidden mb-1.5" style={{ background: 'var(--border)' }}>
+              <div className="h-1.5 rounded-full overflow-hidden mb-1.5" style={{ background: 'var(--border)' }}>
                 <div className="h-full rounded-full" style={{ width: `${(report.weights_breakdown.hiring_manager_score / 10) * 100}%`, background: 'var(--accent4)' }} />
               </div>
               <p className="text-[10px]" style={{ color: 'var(--muted)' }}>Autonomy & incident readiness.</p>
@@ -193,10 +198,10 @@ export const DecisionPanel: React.FC<DecisionPanelProps> = ({
                 <span>HR / Culture (20%)</span>
                 <span className="font-bold" style={{ color: 'var(--accent2)' }}>{report.weights_breakdown.hr_culture_score.toFixed(1)}</span>
               </div>
-              <div className="h-1 rounded-full overflow-hidden mb-1.5" style={{ background: 'var(--border)' }}>
+              <div className="h-1.5 rounded-full overflow-hidden mb-1.5" style={{ background: 'var(--border)' }}>
                 <div className="h-full rounded-full" style={{ width: `${(report.weights_breakdown.hr_culture_score / 10) * 100}%`, background: 'var(--accent2)' }} />
               </div>
-              <p className="text-[10px]" style={{ color: 'var(--muted)' }}>Integrity & retention.</p>
+              <p className="text-[10px]" style={{ color: 'var(--muted)' }}>Integrity & retention probability.</p>
             </div>
           </div>
 
@@ -219,8 +224,8 @@ export const DecisionPanel: React.FC<DecisionPanelProps> = ({
 
             <div className="p-3.5 rounded-xl text-xs font-mono flex items-center justify-between"
               style={{
-                background: report.ownership_bonus_applied ? 'rgba(163,230,53,0.08)' : 'var(--surface)',
-                border: `1px solid ${report.ownership_bonus_applied ? 'rgba(163,230,53,0.3)' : 'var(--border)'}`,
+                background: report.ownership_bonus_applied ? 'rgba(200,255,87,0.08)' : 'var(--surface)',
+                border: `1px solid ${report.ownership_bonus_applied ? 'rgba(200,255,87,0.3)' : 'var(--border)'}`,
                 color: report.ownership_bonus_applied ? 'var(--accent1)' : 'var(--muted)',
               }}>
               <div className="flex items-center gap-2">
@@ -233,21 +238,21 @@ export const DecisionPanel: React.FC<DecisionPanelProps> = ({
             </div>
           </div>
 
-          {/* Summary */}
-          <div className="p-4 rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          {/* Executive Summary */}
+          <div className="p-4 sm:p-5 rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             <span className="text-[10px] font-mono uppercase tracking-wider block mb-1.5" style={{ color: 'var(--accent1)' }}>
-              Executive Summary
+              Executive Decision Summary
             </span>
             <p className="text-xs sm:text-sm font-light leading-relaxed" style={{ color: 'var(--text)' }}>
               {report.executive_summary}
             </p>
           </div>
 
-          {/* Strengths & Concerns */}
+          {/* Strengths vs Concerns */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <div className="p-4 sm:p-5 rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
               <h4 className="font-syne text-sm font-bold flex items-center gap-1.5 mb-3" style={{ color: 'var(--accent1)' }}>
-                <CheckCircle2 className="w-4 h-4" /> Strengths
+                <CheckCircle2 className="w-4 h-4" /> Synthesized Strengths
               </h4>
               <ul className="space-y-1.5 text-xs font-light" style={{ color: 'var(--text-secondary)' }}>
                 {report.synthesized_strengths.map((s, idx) => (
@@ -259,9 +264,9 @@ export const DecisionPanel: React.FC<DecisionPanelProps> = ({
               </ul>
             </div>
 
-            <div className="p-4 rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <div className="p-4 sm:p-5 rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
               <h4 className="font-syne text-sm font-bold flex items-center gap-1.5 mb-3" style={{ color: 'var(--accent3)' }}>
-                <AlertTriangle className="w-4 h-4" /> Concerns & Contradictions
+                <AlertTriangle className="w-4 h-4" /> Critical Concerns & Red Flags
               </h4>
               <ul className="space-y-1.5 text-xs font-light" style={{ color: 'var(--text-secondary)' }}>
                 {report.critical_concerns.map((c, idx) => (

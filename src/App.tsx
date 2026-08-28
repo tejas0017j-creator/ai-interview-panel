@@ -64,36 +64,99 @@ export const App: React.FC = () => {
       const evals = await runParallelEvaluations(activeProfile, apiKey);
       setEvaluations(evals);
       document.getElementById('eval-grid')?.scrollIntoView({ behavior: 'smooth' });
+      return evals;
     } catch (err) {
       console.error('Evaluation error:', err);
+      return null;
     } finally {
       setIsEvaluating(false);
     }
   };
 
   const handleTriggerDebate = async () => {
-    if (!evaluations) return;
+    let currentEvals = evaluations;
+    if (!currentEvals) {
+      setIsEvaluating(true);
+      currentEvals = await runParallelEvaluations(activeProfile, apiKey);
+      setEvaluations(currentEvals);
+      setIsEvaluating(false);
+    }
+    if (!currentEvals) return null;
+
     setIsDebating(true);
     try {
-      const debate = await runDebate(activeProfile, evaluations, apiKey);
+      const debate = await runDebate(activeProfile, currentEvals, apiKey);
       setDebateTranscript(debate);
       document.getElementById('debate-arena')?.scrollIntoView({ behavior: 'smooth' });
+      return { evals: currentEvals, debate };
     } catch (err) {
       console.error('Debate error:', err);
+      return null;
     } finally {
       setIsDebating(false);
     }
   };
 
-  const handleTriggerDecision = () => {
-    if (!evaluations || !debateTranscript) return;
+  const handleTriggerDecision = async () => {
+    let currentEvals = evaluations;
+    let currentDebate = debateTranscript;
+
+    if (!currentEvals) {
+      setIsEvaluating(true);
+      currentEvals = await runParallelEvaluations(activeProfile, apiKey);
+      setEvaluations(currentEvals);
+      setIsEvaluating(false);
+    }
+    if (!currentDebate && currentEvals) {
+      setIsDebating(true);
+      currentDebate = await runDebate(activeProfile, currentEvals, apiKey);
+      setDebateTranscript(currentDebate);
+      setIsDebating(false);
+    }
+
+    if (!currentEvals || !currentDebate) return;
+
     setIsSynthesizing(true);
     setTimeout(() => {
-      const report = synthesizeFinalDecision(activeProfile, evaluations, debateTranscript);
+      const report = synthesizeFinalDecision(activeProfile, currentEvals!, currentDebate!);
       setFinalReport(report);
       setIsSynthesizing(false);
       document.getElementById('decision-panel')?.scrollIntoView({ behavior: 'smooth' });
-    }, 1000);
+    }, 700);
+  };
+
+  const handleRunFullPipeline = async () => {
+    setIsEvaluating(true);
+    setEvaluations(null);
+    setDebateTranscript(null);
+    setFinalReport(null);
+
+    try {
+      // 1. Parallel evaluations
+      const evals = await runParallelEvaluations(activeProfile, apiKey);
+      setEvaluations(evals);
+      setIsEvaluating(false);
+
+      // 2. Multi-turn debate
+      setIsDebating(true);
+      const debate = await runDebate(activeProfile, evals, apiKey);
+      setDebateTranscript(debate);
+      setIsDebating(false);
+
+      // 3. Final Decision Synthesis
+      setIsSynthesizing(true);
+      setTimeout(() => {
+        const report = synthesizeFinalDecision(activeProfile, evals, debate);
+        setFinalReport(report);
+        setIsSynthesizing(false);
+        document.getElementById('decision-panel')?.scrollIntoView({ behavior: 'smooth' });
+      }, 700);
+    } catch (err) {
+      console.error('Pipeline error:', err);
+      setIsEvaluating(false);
+      setIsDebating(false);
+      setIsSynthesizing(false);
+    }
   };
 
   return (
@@ -107,9 +170,9 @@ export const App: React.FC = () => {
       />
 
       <Hero
-        onStartEvaluation={handleStartEvaluation}
+        onStartEvaluation={handleRunFullPipeline}
         onOpenVoiceAssistant={() => setIsAssistantOpen(true)}
-        isEvaluating={isEvaluating}
+        isEvaluating={isEvaluating || isDebating || isSynthesizing}
       />
 
       <MarqueeRibbon />
