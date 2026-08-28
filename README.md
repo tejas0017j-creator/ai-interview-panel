@@ -1,5 +1,7 @@
 # ⚡ Cargonet AI — Multi-Agent AI Interview Panel Simulator
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftejas0017j-creator%2Fai-interview-panel)
+
 An autonomous, production-ready multi-agent candidate evaluation platform built with **React 18**, **TypeScript**, **Tailwind CSS**, and **Google Gemini Flash**. 
 
 Instead of simplistic keyword matching or flat score averages, Cargonet AI deploys **4 specialized AI agents in parallel isolation**, subjects claims to a **forensic cross-examination debate arena**, applies **non-averaging mathematical multipliers**, and features an interactive **2-Way Live Voice & Camera Mock Interview Simulator**.
